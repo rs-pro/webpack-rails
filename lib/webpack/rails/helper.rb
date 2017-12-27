@@ -15,8 +15,13 @@ module Webpack
       def webpack_asset_paths(source, extension: nil)
         return "" unless source.present?
 
-        paths = Webpack::Rails::Manifest.asset_paths(source)
-        paths = paths.select { |p| p.ends_with? ".#{extension}" } if extension
+        if ::Rails.configuration.webpack.manifest_type == "manifest"
+          extension = "js" if extension.nil?
+          paths = Webpack::Rails::Manifest.manifest_asset_paths(source + "." + extension)
+        elsif ::Rails.configuration.webpack.manifest_type == "stats"
+          paths = Webpack::Rails::Manifest.asset_paths(source)
+          paths = paths.select { |p| p.ends_with? ".#{extension}" } if extension
+        end
 
         port = ::Rails.configuration.webpack.dev_server.port
         protocol = ::Rails.configuration.webpack.dev_server.https ? 'https' : 'http'
@@ -24,7 +29,7 @@ module Webpack
         host = ::Rails.configuration.webpack.dev_server.host
         host = instance_eval(&host) if host.respond_to?(:call)
 
-        if ::Rails.configuration.webpack.dev_server.enabled
+        if ::Rails.configuration.webpack.dev_server.enabled && ::Rails.configuration.webpack.manifest_type == "stats"
           paths.map! do |p|
             "#{protocol}://#{host}:#{port}#{p}"
           end

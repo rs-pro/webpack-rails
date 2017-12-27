@@ -40,6 +40,10 @@ module Webpack
     config.webpack.public_path = "webpack"
     config.webpack.manifest_filename = "manifest.json"
 
+    # manifest: https://github.com/danethurber/webpack-manifest-plugin
+    # stats: https://github.com/unindented/stats-webpack-plugin
+    config.webpack.manifest_type = "stats"
+
     rake_tasks do
       load "tasks/webpack.rake"
     end

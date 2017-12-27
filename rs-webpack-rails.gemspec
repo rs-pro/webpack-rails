@@ -5,7 +5,7 @@ require "webpack/rails/version"
 
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |s|
-  s.name        = "webpack-rails"
+  s.name        = "rs-webpack-rails"
   s.version     = Webpack::Rails::VERSION
   s.authors     = ["Michael Pearson"]
   s.email       = ["mipearson@gmail.com"]

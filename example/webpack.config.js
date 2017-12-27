@@ -3,7 +3,8 @@
 
 var path = require('path');
 var webpack = require('webpack');
-var StatsPlugin = require('stats-webpack-plugin');
+//var StatsPlugin = require('stats-webpack-plugin');
+var ManifestPlugin = require('webpack-manifest-plugin');
 
 // must match config.webpack.dev_server.port
 var devServerPort = 3808;
@@ -14,7 +15,7 @@ var production = process.env.NODE_ENV === 'production';
 var config = {
   entry: {
     // Sources are expected to live in $app_root/webpack
-    'application': './webpack/application.js'
+    'application': 'application.js'
   },
 
   output: {
@@ -22,26 +23,33 @@ var config = {
     // that all webpacked assets start with webpack/
 
     // must match config.webpack.output_dir
-    path: path.join(__dirname, '..', 'public', 'webpack'),
+    path: path.join(__dirname, 'public', 'webpack'),
     publicPath: '/webpack/',
 
     filename: production ? '[name]-[chunkhash].js' : '[name].js'
   },
 
   resolve: {
-    root: path.join(__dirname, '..', 'webpack')
+    modules: [path.resolve(__dirname, "webpack"), path.resolve(__dirname, "node_modules")],
   },
 
   plugins: [
     // must match config.webpack.manifest_filename
-    new StatsPlugin('manifest.json', {
+    //new StatsPlugin('manifest.json', {
       // We only need assetsByChunkName
-      chunkModules: false,
-      source: false,
-      chunks: false,
-      modules: false,
-      assets: true
-    })]
+      //chunkModules: false,
+      //source: false,
+      //chunks: false,
+      //modules: false,
+      //assets: true
+    //}),
+    new ManifestPlugin({
+      writeToFileEmit: true,
+      //basePath: "",
+      publicPath: production ? "/webpack/" : 'http://localhost:' + devServerPort + '/webpack/',
+    }),
+  ]
+
 };
 
 if (production) {
@@ -62,7 +70,7 @@ if (production) {
     port: devServerPort,
     headers: { 'Access-Control-Allow-Origin': '*' }
   };
-  config.output.publicPath = '//localhost:' + devServerPort + '/webpack/';
+  config.output.publicPath = 'http://localhost:' + devServerPort + '/webpack/';
   // Source maps
   config.devtool = 'cheap-module-eval-source-map';
 }

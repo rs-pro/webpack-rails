@@ -1,12 +1,35 @@
-# No Longer Maintained
+# Alternate way of using webpack with rails, based on webpack-rails
 
-Hi! `webpack-rails` is no longer being maintained. Please see #90 for more info.
+Supports [ManifestPlugin](https://github.com/danethurber/webpack-manifest-plugin) instead of [StatsPlugin](https://github.com/unindented/stats-webpack-plugin) on webpack side.
 
-[![Build Status](https://travis-ci.org/mipearson/webpack-rails.svg?branch=master)](https://travis-ci.org/mipearson/webpack-rails) [![Gem Version](https://badge.fury.io/rb/webpack-rails.svg)](http://badge.fury.io/rb/webpack-rails)
+#### installation
 
-# webpack-rails
+Add the gem:
 
-**webpack-rails** gives you tools to integrate Webpack in to an existing Ruby on Rails application.
+```
+gem 'rs-webpack-rails'
+```
+
+Create webpack config at config/webpack.config.js (see example)
+
+
+#### Usage with manifest plugin:
+
+```
+# config/application.rb
+::Rails.configuration.webpack.manifest_type = "manifest"
+
+# config/webpack.config.js
+new ManifestPlugin({
+  writeToFileEmit: true,
+  //basePath: "",
+  publicPath: production ? "/webpack/" : 'http://' + host + ':' + devServerPort + '/webpack/',
+}),
+```
+
+# rs-webpack-rails
+
+**rs-webpack-rails** gives you tools to integrate Webpack in to an existing Ruby on Rails application.
 
 It will happily co-exist with sprockets but does not use it for production fingerprinting or asset serving. **webpack-rails** is designed with the assumption that if you're using Webpack you treat Javascript as a first-class citizen. This means that you control the webpack config, package.json, and use yarn to install Webpack & its plugins.
 

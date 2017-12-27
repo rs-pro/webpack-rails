@@ -40,9 +40,21 @@ module Webpack
           end
         end
 
+        def manifest_asset_paths(source)
+          raise WebpackError, manifest["errors"] unless manifest_bundled?
+
+          paths = manifest[source]
+          if paths
+            paths
+          else
+            raise EntryPointMissingError, "Can't find entry point '#{source}' in webpack manifest"
+          end
+        end
+
         private
 
         def manifest_bundled?
+          return true unless manifest.key?("errors")
           !manifest["errors"].any? { |error| error.include? "Module build failed" }
         end
 
