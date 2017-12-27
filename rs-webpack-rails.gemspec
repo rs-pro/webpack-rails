@@ -10,8 +10,8 @@ Gem::Specification.new do |s|
   s.authors     = ["Michael Pearson"]
   s.email       = ["mipearson@gmail.com"]
   s.homepage    = "http://github.com/mipearson/webpack-rails"
-  s.summary     = "No longer maintained - use webpacker instead."
-  s.description = "No longer maintained - use webpacker instead."
+  s.summary     = "Simple webpack and rails intergration."
+  s.description = "Simple webpack and rails intergration."
   s.license     = "MIT"
 
   s.files = Dir["{app,config,db,lib,example}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
