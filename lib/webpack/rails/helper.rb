@@ -12,15 +12,20 @@ module Webpack
       #
       # Will raise an error if our manifest can't be found or the entry point does
       # not exist.
-      def webpack_asset_paths(source, extension: nil)
+      def webpack_asset_paths(source, extension: nil, ignore_missing: false)
         return "" unless source.present?
 
-        if ::Rails.configuration.webpack.manifest_type == "manifest"
-          extension = "js" if extension.nil?
-          paths = Webpack::Rails::Manifest.manifest_asset_paths(source + "." + extension)
-        elsif ::Rails.configuration.webpack.manifest_type == "stats"
-          paths = Webpack::Rails::Manifest.asset_paths(source)
-          paths = paths.select { |p| p.ends_with? ".#{extension}" } if extension
+        begin
+          if ::Rails.configuration.webpack.manifest_type == "manifest"
+            extension = "js" if extension.nil?
+            paths = Webpack::Rails::Manifest.manifest_asset_paths(source + "." + extension)
+          elsif ::Rails.configuration.webpack.manifest_type == "stats"
+            paths = Webpack::Rails::Manifest.asset_paths(source)
+            paths = paths.select { |p| p.ends_with? ".#{extension}" } if extension
+          end
+        rescue Webpack::Rails::Manifest::EntryPointMissingError => e
+          # puts "webpack asset missing in manifest: #{source}"
+          raise e unless ignore_missing
         end
 
         port = ::Rails.configuration.webpack.dev_server.port
