@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     rs-webpack-rails (0.11.0)
-      railties (>= 3.2.0)
+      railties (>= 5.0.0)
 
 GEM
   remote: https://rubygems.org/
@@ -105,6 +105,7 @@ GEM
       thor (>= 0.18.1, < 2.0)
     rainbow (3.0.0)
     rake (12.3.1)
+    rdoc (6.0.3)
     rspec (3.7.0)
       rspec-core (~> 3.7.0)
       rspec-expectations (~> 3.7.0)
@@ -151,8 +152,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  rails (>= 3.2.0)
+  bundler
+  rails (>= 5.0.0)
   rake
+  rdoc
   rs-webpack-rails!
   rspec
   rubocop

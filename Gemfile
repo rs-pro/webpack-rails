@@ -1,7 +1,4 @@
 source 'https://rubygems.org'
 
-gem 'rspec'
-gem 'webmock'
-gem 'rubocop'
-gem 'rake'
+# Specify your gem's dependencies in ra-webpack-rails.gemspec
 gemspec

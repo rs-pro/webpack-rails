@@ -17,7 +17,14 @@ Gem::Specification.new do |s|
   s.files = Dir["{app,config,db,lib,example}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   s.test_files = Dir["test/**/*"]
 
-  s.add_dependency "railties", ">= 3.2.0"
-  s.add_development_dependency "rails", ">= 3.2.0"
+  s.add_development_dependency 'bundler'
+  s.add_development_dependency 'rake'
+  s.add_development_dependency "rails", ">= 5.0.0"
+  s.add_development_dependency "rdoc"
+  s.add_development_dependency "rspec"
+  s.add_development_dependency "webmock"
+  s.add_development_dependency "rubocop"
+
+  s.add_dependency "railties", ">= 5.0.0"
   s.required_ruby_version = '>= 2.0.0'
 end
