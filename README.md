@@ -12,7 +12,6 @@ gem 'rs-webpack-rails'
 
 Create webpack config at config/webpack.config.js (see example)
 
-
 #### Usage with manifest plugin:
 
 ```
@@ -26,6 +25,13 @@ new ManifestPlugin({
   publicPath: production ? "/webpack/" : 'http://' + host + ':' + devServerPort + '/webpack/',
 }),
 ```
+
+### Capistrano integration
+```
+# Capfile
+require 'capistrano/webpack'
+```
+that's it. Based on capistrano-rails with proper manifest management & rollback.
 
 # rs-webpack-rails
 
