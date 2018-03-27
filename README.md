@@ -33,6 +33,10 @@ require 'capistrano/webpack'
 ```
 that's it. Based on capistrano-rails with proper manifest management & rollback.
 
+### NOTE:
+If using "capistrano/rails/assets", it should be BEFORE this as it calls yarn:install
+If not using it, use [capistrano-yarn](https://github.com/ManifoldScholar/capistrano-yarn)
+
 # rs-webpack-rails
 
 **rs-webpack-rails** gives you tools to integrate Webpack in to an existing Ruby on Rails application.
