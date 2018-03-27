@@ -22,7 +22,7 @@ namespace :deploy do
 
   desc 'Compile webpack assets'
   task :compile_webpack_assets => [:webpack_set_rails_env] do
-    invoke 'deploy:webpack:compile'
+    invoke 'deploy:webpack:precompile'
     invoke 'deploy:webpack:backup_manifest'
   end
 
