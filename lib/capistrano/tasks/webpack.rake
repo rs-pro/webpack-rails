@@ -41,7 +41,7 @@ namespace :deploy do
 
   namespace :webpack do
     task :precompile do
-      on release_roles(fetch(:assets_roles)) do
+      on release_roles(fetch(:webpack_roles)) do
         within release_path do
           with rails_env: fetch(:rails_env), rails_groups: fetch(:rails_assets_groups) do
             execute :rake, "webpack:compile"
@@ -51,7 +51,7 @@ namespace :deploy do
     end
 
     task :backup_manifest do
-      on release_roles(fetch(:assets_roles)) do
+      on release_roles(fetch(:webpack_roles)) do
         within release_path do
           backup_path = release_path.join('webpack_manifest_backup')
 
@@ -64,7 +64,7 @@ namespace :deploy do
     end
 
     task :restore_manifest do
-      on release_roles(fetch(:assets_roles)) do
+      on release_roles(fetch(:webpack_roles)) do
         within release_path do
           target = detect_manifest_path
           source = release_path.join('webpack_manifest_backup', File.basename(target))
