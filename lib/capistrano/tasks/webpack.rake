@@ -81,9 +81,9 @@ namespace :deploy do
 
     def detect_manifest_path
       %w(
-        manifest*.*
+        manifest.json
       ).each do |pattern|
-        candidate = release_path.join('public', fetch(:assets_prefix), pattern)
+        candidate = release_path.join('public', fetch(:webpack_prefix), pattern)
         return capture(:ls, candidate).strip.gsub(/(\r|\n)/,' ') if test(:ls, candidate)
       end
       msg = 'Webpack assets manifest file not found.'
