@@ -57,7 +57,7 @@ namespace :deploy do
 
           execute :mkdir, '-p', backup_path
           execute :cp,
-            detect_manifest_path,
+            detect_webpack_manifest_path,
             backup_path
         end
       end
@@ -66,7 +66,7 @@ namespace :deploy do
     task :restore_manifest do
       on release_roles(fetch(:webpack_roles)) do
         within release_path do
-          target = detect_manifest_path
+          target = detect_webpack_manifest_path
           source = release_path.join('webpack_manifest_backup', File.basename(target))
           if test "[[ -f #{source} && -f #{target} ]]"
             execute :cp, source, target
@@ -79,7 +79,7 @@ namespace :deploy do
       end
     end
 
-    def detect_manifest_path
+    def detect_webpack_manifest_path
       %w(
         manifest.json
       ).each do |pattern|

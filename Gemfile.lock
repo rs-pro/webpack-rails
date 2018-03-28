@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rs-webpack-rails (0.11.1)
+    rs-webpack-rails (0.11.2)
       railties (>= 5.0.0)
 
 GEM
