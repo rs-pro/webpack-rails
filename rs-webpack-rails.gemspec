@@ -7,9 +7,9 @@ require "webpack/rails/version"
 Gem::Specification.new do |s|
   s.name        = "rs-webpack-rails"
   s.version     = Webpack::Rails::VERSION
-  s.authors     = ["Michael Pearson"]
-  s.email       = ["mipearson@gmail.com"]
-  s.homepage    = "http://github.com/mipearson/webpack-rails"
+  s.authors     = ["glebtv", "Michael Pearson"]
+  s.email       = ["glebtv@gmail.com", "mipearson@gmail.com"]
+  s.homepage    = "http://github.com/rs-pro/webpack-rails"
   s.summary     = "Simple webpack and rails intergration."
   s.description = "Simple webpack and rails intergration."
   s.license     = "MIT"
