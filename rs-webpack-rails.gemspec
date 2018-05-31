@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'bundler'
   s.add_development_dependency 'rake'
-  s.add_development_dependency "rails", ">= 5.0.0"
+  s.add_development_dependency "rails", ">= 4.0.0"
   s.add_development_dependency "rdoc"
   s.add_development_dependency "rspec"
   s.add_development_dependency "webmock"
