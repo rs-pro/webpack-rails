@@ -25,6 +25,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency "webmock"
   s.add_development_dependency "rubocop"
 
-  s.add_dependency "railties", ">= 5.0.0"
+  s.add_dependency "railties", ">= 4.0.0"
   s.required_ruby_version = '>= 2.0.0'
 end
