@@ -1,5 +1,9 @@
 # Alternate way of using webpack with rails, based on webpack-rails
 
+Master repository has moved to gitlab, all new code will be there:
+
+https://gitlab.com/rocket-science/webpack-rails
+
 Supports [ManifestPlugin](https://github.com/danethurber/webpack-manifest-plugin) instead of [StatsPlugin](https://github.com/unindented/stats-webpack-plugin) on webpack side.
 
 #### installation

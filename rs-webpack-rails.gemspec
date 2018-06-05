@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.version     = Webpack::Rails::VERSION
   s.authors     = ["glebtv", "Michael Pearson"]
   s.email       = ["glebtv@gmail.com", "mipearson@gmail.com"]
-  s.homepage    = "http://github.com/rs-pro/webpack-rails"
+  s.homepage    = "https://gitlab.com/rocket-science/webpack-rails"
   s.summary     = "Simple webpack and rails intergration."
   s.description = "Simple webpack and rails intergration."
   s.license     = "MIT"
