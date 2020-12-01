@@ -9,7 +9,7 @@ end
 
 namespace :deploy do
   desc 'Normalize webpack asset timestamps'
-  task :normalize_webpack_assets => [:set_rails_env] do
+  task :normalize_webpack_assets => [:webpack_set_rails_env] do
     on release_roles(fetch(:assets_roles)) do
       assets = Array(fetch(:normalize_asset_timestamps, []))
       if assets.any?
@@ -27,7 +27,7 @@ namespace :deploy do
   end
 
   desc 'Rollback webpack assets'
-  task :rollback_webpack_assets => [:set_rails_env] do
+  task :rollback_webpack_assets => [:webpack_set_rails_env] do
     begin
       invoke 'deploy:webpack:restore_manifest'
     rescue Capistrano::FileNotFound
@@ -105,7 +105,7 @@ namespace :deploy do
   end
 end
 
-after 'deploy:set_rails_env', 'deploy:set_linked_dirs'
+after 'deploy:webpack_set_rails_env', 'deploy:set_linked_dirs'
 
 namespace :load do
   task :defaults do
