@@ -10,8 +10,8 @@ Gem::Specification.new do |s|
   s.authors     = ["glebtv", "Michael Pearson"]
   s.email       = ["glebtv@gmail.com", "mipearson@gmail.com"]
   s.homepage    = "https://gitlab.com/rocket-science/webpack-rails"
-  s.summary     = "Simple webpack and rails intergration."
-  s.description = "Simple webpack and rails intergration."
+  s.summary     = "Webpack 5 integration for Rails 7+ with Propshaft"
+  s.description = "Integrates Webpack 5 with Rails 7+ and Propshaft asset pipeline. Provides seamless asset compilation, digest stamping, and development server support."
   s.license     = "MIT"
 
   s.files = Dir["{app,config,db,lib,example}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
@@ -19,12 +19,16 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'bundler'
   s.add_development_dependency 'rake'
-  s.add_development_dependency "rails", ">= 4.0.0"
-  s.add_development_dependency "rdoc"
-  s.add_development_dependency "rspec"
-  s.add_development_dependency "webmock"
+  s.add_development_dependency "rails", ">= 7.0.0"
+  s.add_development_dependency "rspec-rails"
+  s.add_development_dependency "capybara"
+  s.add_development_dependency "cuprite"
+  s.add_development_dependency "database_cleaner-active_record"
+  s.add_development_dependency "sqlite3"
   s.add_development_dependency "rubocop"
+  s.add_development_dependency "simplecov"
 
-  s.add_dependency "railties", ">= 4.0.0"
-  s.required_ruby_version = '>= 2.0.0'
+  s.add_dependency "railties", ">= 7.0.0"
+  s.add_dependency "propshaft", ">= 0.6.0"
+  s.required_ruby_version = '>= 3.0.0'
 end

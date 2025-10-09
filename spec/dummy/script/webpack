@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+
+# This script builds webpack assets for the dummy application
+
+require "fileutils"
+
+APP_ROOT = File.expand_path("..", __dir__)
+
+def system!(*args)
+  system(*args, exception: true)
+end
+
+FileUtils.chdir APP_ROOT do
+  puts "== Building webpack assets =="
+
+  if ENV["RAILS_ENV"] == "production" || ENV["NODE_ENV"] == "production"
+    system! "npm run build"
+  else
+    puts "Building in development mode..."
+    system! "npm run build -- --mode development"
+  end
+
+  puts "== Webpack build complete =="
+end

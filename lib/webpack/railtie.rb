@@ -5,12 +5,6 @@ require 'webpack/rails/helper'
 module Webpack
   # :nodoc:
   class Railtie < ::Rails::Railtie
-    config.after_initialize do
-      ActiveSupport.on_load(:action_view) do
-        include Webpack::Rails::Helper
-      end
-    end
-
     config.webpack = ActiveSupport::OrderedOptions.new
     config.webpack.dev_server = ActiveSupport::OrderedOptions.new
 
@@ -31,8 +25,7 @@ module Webpack
     config.webpack.dev_server.manifest_port = 3808
 
     config.webpack.dev_server.https = false
-    # Below will default to 'true' in 1.0 release
-    config.webpack.dev_server.https_verify_peer = false
+    config.webpack.dev_server.https_verify_peer = true
     config.webpack.dev_server.binary = 'node_modules/.bin/webpack-dev-server'
     config.webpack.dev_server.enabled = ::Rails.env.development? || ::Rails.env.test?
 
@@ -43,6 +36,21 @@ module Webpack
     # manifest: https://github.com/danethurber/webpack-manifest-plugin
     # stats: https://github.com/unindented/stats-webpack-plugin
     config.webpack.manifest_type = "stats"
+
+    initializer "webpack.append_assets_path", group: :all do |app|
+      # Add webpack output directory to asset pipeline's load path
+      # This supports both Sprockets (older Rails) and Propshaft (Rails 7+)
+      webpack_output = app.root.join(app.config.webpack.output_dir)
+      if webpack_output.exist? && app.config.respond_to?(:assets)
+        app.config.assets.paths << webpack_output
+      end
+    end
+
+    config.after_initialize do
+      ActiveSupport.on_load(:action_view) do
+        include Webpack::Rails::Helper
+      end
+    end
 
     rake_tasks do
       load "tasks/webpack.rake"

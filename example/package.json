@@ -1,10 +1,20 @@
 {
   "name": "webpack-rails-example",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "license": "MIT",
+  "scripts": {
+    "build": "webpack --config config/webpack.config.js --mode production",
+    "dev": "webpack-dev-server --config config/webpack.config.js --mode development"
+  },
   "dependencies": {
-    "webpack-dev-server": "^2.5.1",
-    "webpack": "^3.3.0",
-    "webpack-manifest-plugin": "^1.3.2"
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "webpack-manifest-plugin": "^5.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "babel-loader": "^9.1.3"
   }
 }

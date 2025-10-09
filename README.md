@@ -1,170 +1,522 @@
-# Alternate way of using webpack with rails, based on webpack-rails
+# rs-webpack-rails
 
-Master repository has moved to gitlab, all new code will be there:
+**Webpack 5 integration for Rails 7+ with Propshaft**
 
-https://gitlab.com/rocket-science/webpack-rails
+Modern, seamless integration of Webpack 5 with Rails 7/8 and the Propshaft asset pipeline. Build your JavaScript with Webpack's powerful bundling capabilities while leveraging Rails' native asset serving through Propshaft.
 
-Supports [ManifestPlugin](https://github.com/danethurber/webpack-manifest-plugin) instead of [StatsPlugin](https://github.com/unindented/stats-webpack-plugin) on webpack side.
+[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.0-red.svg)](https://www.ruby-lang.org)
+[![Rails](https://img.shields.io/badge/rails-%3E%3D%207.0-red.svg)](https://rubyonrails.org)
+[![Webpack](https://img.shields.io/badge/webpack-5.x-blue.svg)](https://webpack.js.org)
 
-#### installation
+## Features
 
-Add the gem:
+- 🚀 **Webpack 5** support with modern JavaScript bundling
+- 💎 **Rails 7/8** integration with Propshaft asset pipeline
+- 🔥 **Hot Module Replacement** in development via webpack-dev-server
+- 📦 **Automatic digest preservation** with `.digested` extension pattern
+- 🎯 **Zero configuration** for standard setups
+- 🔄 **Backwards compatible** API with legacy `webpack_asset_paths` helper
+- 🚢 **Capistrano 3** deployment support
 
+## Requirements
+
+- Ruby >= 3.0
+- Rails >= 7.0
+- Webpack 5.x
+- Node.js >= 18.x
+
+## How It Works
+
+This gem bridges Webpack and Rails by:
+
+1. **Webpack compiles** your JavaScript to `public/webpack/` with `.digested` extension
+2. **Propshaft discovers** these assets automatically (no manifest needed)
+3. **Rails helpers** resolve asset paths through Propshaft's manifest
+4. **Production serving** happens via standard Rails asset pipeline
+
+### The `.digested` Extension Pattern
+
+Webpack outputs files like `application-abc123def.digested.js`. The `.digested` extension signals to Propshaft that Webpack has already added a content hash, so Propshaft preserves the filename as-is instead of re-digesting it.
+
+**Example flow:**
 ```
+webpack/application.js
+  → [Webpack 5 builds]
+  → public/webpack/application-abc123.digested.js
+  → [Propshaft serves]
+  → /assets/application-abc123.digested.js
+```
+
+## Installation
+
+### 1. Add the gem
+
+```ruby
+# Gemfile
 gem 'rs-webpack-rails'
 ```
 
-Create webpack config at config/webpack.config.js (see example)
-
-#### Usage with manifest plugin:
-
-```
-# config/application.rb
-::Rails.configuration.webpack.manifest_type = "manifest"
-
-# config/webpack.config.js
-new ManifestPlugin({
-  writeToFileEmit: true,
-  //basePath: "",
-  publicPath: production ? "/webpack/" : 'http://' + host + ':' + devServerPort + '/webpack/',
-}),
+```bash
+bundle install
 ```
 
-### Capistrano integration
+### 2. Run the generator
+
+```bash
+rails generate webpack_rails:install
 ```
-# Capfile
-require 'capistrano/webpack'
+
+This creates:
+- `config/webpack.config.js` - Webpack 5 configuration
+- `package.json` - Node.js dependencies
+- `webpack/application.js` - Entry point
+- `Procfile` - For running dev servers concurrently
+
+### 3. Install Node dependencies
+
+```bash
+npm install
 ```
-that's it. Based on capistrano-rails with proper manifest management & rollback.
 
-### NOTE:
-If using "capistrano/rails/assets", it should be BEFORE this as it calls yarn:install
-If not using it, use [capistrano-yarn](https://github.com/ManifoldScholar/capistrano-yarn)
-
-# rs-webpack-rails
-
-**rs-webpack-rails** gives you tools to integrate Webpack in to an existing Ruby on Rails application.
-
-It will happily co-exist with sprockets but does not use it for production fingerprinting or asset serving. **webpack-rails** is designed with the assumption that if you're using Webpack you treat Javascript as a first-class citizen. This means that you control the webpack config, package.json, and use yarn to install Webpack & its plugins.
-
-In development mode [webpack-dev-server](http://webpack.github.io/docs/webpack-dev-server.html) is used to serve webpacked entry points and offer hot module reloading. In production entry points are built in to `public/webpack`. **webpack-rails** uses [stats-webpack-plugin](https://www.npmjs.com/package/stats-webpack-plugin) to translate entry points in to asset paths.
-
-It was designed for use at [Marketplacer](http://www.marketplacer.com) to assist us in migrating our Javascript (and possibly our SCSS) off of Sprockets. It first saw production use in June 2015.
-
-Our examples show **webpack-rails** co-existing with sprockets (as that's how environment works), but sprockets is not used or required for development or production use of this gem.
-
-This gem has been tested against Rails 4.2 and Ruby 2.2. Earlier versions of Rails (>= 3.2) and Ruby (>= 2.0) may work, but we haven't tested them.
-
-## Using webpack-rails
-
-**We have a demo application: [webpack-rails-demo](https://github.com/mipearson/webpack-rails-demo)**
-
-### Installation
-
-  1. Install [yarn](https://yarnpkg.com/en/docs/install) if you haven't already
-  1. Add `webpack-rails` to your gemfile
-  1. Run `bundle install` to install the gem
-  1. Run `bundle exec rails generate webpack_rails:install` to copy across example files
-  1. Run `foreman start` to start `webpack-dev-server` and `rails server` at the same time
-  1. Add the webpack entry point to your layout (see next section)
-  1. Edit `webpack/application.js` and write some code
-
-
-### Adding the entry point to your Rails application
-
-To add your webpacked javascript in to your app, add the following to the `<head>` section of your to your `layout.html.erb`:
+### 4. Add webpack assets to your layout
 
 ```erb
+<!-- app/views/layouts/application.html.erb -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My App</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <!-- Webpack assets via helper -->
+    <%= javascript_include_tag *webpack_asset_paths("application") %>
+  </head>
+  <body>
+    <%= yield %>
+  </body>
+</html>
+```
+
+## Usage
+
+### Development
+
+**Option 1: Using Foreman (recommended)**
+```bash
+foreman start
+```
+
+This starts both:
+- Rails server on port 3000
+- Webpack dev server on port 3808
+
+**Option 2: Separate terminals**
+```bash
+# Terminal 1
+rails server
+
+# Terminal 2
+npm run dev
+```
+
+### Production
+
+Compile webpack assets before deploying:
+
+```bash
+rake webpack:compile
+```
+
+This runs `webpack --config config/webpack.config.js --bail` in production mode, outputting digested assets to `public/webpack/`.
+
+### View Helpers
+
+The gem provides the `webpack_asset_paths` helper that returns an array of asset URLs:
+
+```erb
+<!-- JavaScript -->
 <%= javascript_include_tag *webpack_asset_paths("application") %>
+
+<!-- CSS (if webpack extracts CSS) -->
+<%= stylesheet_link_tag *webpack_asset_paths("application", extension: "css") %>
+
+<!-- Ignore missing assets -->
+<%= javascript_include_tag *webpack_asset_paths("admin", ignore_missing: true) %>
 ```
 
-Take note of the splat (`*`): `webpack_asset_paths` returns an array, as one entry point can map to multiple paths, especially if hot reloading is enabled in Webpack.
+**Why an array?** Webpack can output multiple files per entry point (main bundle, chunks, source maps). The helper returns all of them.
 
-If your webpack is configured to output both CSS and JS, you can use the `extension:` argument to filter which files are returned by the helper:
+## Configuration
 
-```erb
-<%= javascript_include_tag *webpack_asset_paths('application', extension: 'js') %>
-<%= stylesheet_link_tag *webpack_asset_paths('application', extension: 'css') %>
+### Webpack Configuration
+
+The generated `config/webpack.config.js` is pre-configured for Rails integration:
+
+```javascript
+// config/webpack.config.js
+const path = require('path');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
+
+const production = process.env.NODE_ENV === 'production';
+const devServerPort = 3808;
+
+module.exports = {
+  mode: production ? 'production' : 'development',
+
+  entry: {
+    application: './webpack/application.js'
+  },
+
+  output: {
+    path: path.join(__dirname, '../public/webpack'),
+    publicPath: production ? '/webpack/' : `http://localhost:${devServerPort}/webpack/`,
+
+    // Important: .digested extension prevents Propshaft from re-digesting
+    filename: production ? '[name]-[contenthash].digested.js' : '[name].js',
+    chunkFilename: production ? '[name]-[contenthash].digested.chunk.js' : '[name].chunk.js',
+  },
+
+  plugins: [
+    new WebpackManifestPlugin({
+      publicPath: production ? '/webpack/' : `http://localhost:${devServerPort}/webpack/`,
+      writeToFileEmit: true,
+    })
+  ],
+
+  devServer: {
+    port: devServerPort,
+    hot: true,
+    headers: { 'Access-Control-Allow-Origin': '*' },
+  }
+};
 ```
 
-#### Use with webpack-dev-server live reload
+### Rails Configuration
 
-If you're using the webpack dev server's live reload feature (not the React hot reloader), you'll also need to include the following in your layout template:
-
-``` html
-<script src="http://localhost:3808/webpack-dev-server.js"></script>
-```
-
-### How it works
-
-Have a look at the files in the `examples` directory. Of note:
-
-  * We use [foreman](https://github.com/ddollar/foreman) and a `Procfile` to run our rails server & the webpack dev server in development at the same time
-  * The webpack and gem configuration must be in sync - look at our railtie for configuration options
-  * We require that **stats-webpack-plugin** is loaded to automatically generate a production manifest & resolve paths during development
-
-### Configuration Defaults
-
-  * Webpack configuration lives in `config/webpack.config.js`
-  * Webpack & Webpack Dev Server binaries are in `node_modules/.bin/`
-  * Webpack Dev Server will run on port 3808 on localhost via HTTP
-  * Webpack Dev Server is enabled in development & test, but not in production
-  * Webpacked assets will be compiled to `public/webpack`
-  * The manifest file is named `manifest.json`
-
-#### Dynamic host
-
-To have the host evaluated at request-time, set `host` to a proc:
+Default configuration in `config/application.rb`:
 
 ```ruby
-config.webpack.dev_server.host = proc { request.host }
+# These are set automatically by the gem with sensible defaults
+config.webpack.config_file = 'config/webpack.config.js'
+config.webpack.binary = 'node_modules/.bin/webpack'
+config.webpack.output_dir = 'public/webpack'
+config.webpack.public_path = 'webpack'
+config.webpack.manifest_filename = 'manifest.json'
+
+# Dev server settings
+config.webpack.dev_server.host = proc { request.host }  # Dynamic host
+config.webpack.dev_server.port = 3808
+config.webpack.dev_server.enabled = Rails.env.development? || Rails.env.test?
 ```
 
-This is useful when accessing your Rails app over the network (remember to bind both your Rails app and your WebPack server to `0.0.0.0`).
+### Custom Configuration
 
-#### Use with docker-compose
+Override defaults in your `config/application.rb` or environment files:
 
-If you're running `webpack-dev-server` as part of docker compose rather than `foreman`, you might find that the host and port that rails needs to use to retrieve the manifest isn't the same as the host and port that you'll be giving to the browser to retrieve the assets.
+```ruby
+# config/application.rb
+config.webpack.output_dir = 'public/assets/webpack'  # Custom output directory
+config.webpack.dev_server.port = 8080                # Custom dev server port
 
-If so, you can set the `manifest_host` and `manifest_port` away from their default of `localhost` and port 3808.
+# For Docker environments
+config.webpack.dev_server.manifest_host = 'webpack'  # Container hostname
+config.webpack.dev_server.manifest_port = 3808
+```
 
-### Working with browser tests
+## Multiple Entry Points
 
-In development, we make sure that the `webpack-dev-server` is running when browser tests are running.
+Add multiple entry points in your webpack config:
 
-#### Continuous Integration
+```javascript
+// config/webpack.config.js
+module.exports = {
+  entry: {
+    application: './webpack/application.js',
+    admin: './webpack/admin.js',
+    mobile: './webpack/mobile.js'
+  },
+  // ... rest of config
+};
+```
 
-In CI, we manually run `webpack` to compile the assets to public and set `config.webpack.dev_server.enabled` to `false` in our `config/environments/test.rb`:
+Use in views:
 
-``` ruby
+```erb
+<%= javascript_include_tag *webpack_asset_paths("admin") %>
+```
+
+## CSS Support
+
+To bundle CSS with Webpack, use `mini-css-extract-plugin`:
+
+```bash
+npm install --save-dev mini-css-extract-plugin css-loader
+```
+
+```javascript
+// config/webpack.config.js
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [MiniCssExtractPlugin.loader, 'css-loader']
+      }
+    ]
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: production ? '[name]-[contenthash].digested.css' : '[name].css'
+    })
+  ]
+};
+```
+
+```erb
+<!-- In your layout -->
+<%= stylesheet_link_tag *webpack_asset_paths("application", extension: "css") %>
+```
+
+## Testing
+
+### Browser Tests
+
+In your test environment, compile assets before running tests:
+
+```ruby
+# config/environments/test.rb
 config.webpack.dev_server.enabled = !ENV['CI']
 ```
 
-### Production Deployment
+```bash
+# In CI
+NODE_ENV=production rake webpack:compile
+rspec
+```
 
-Add `rake webpack:compile` to your deployment. It serves a similar purpose as Sprockets' `assets:precompile` task. If you're using Webpack and Sprockets (as we are at Marketplacer) you'll need to run both tasks - but it doesn't matter which order they're run in.
+### With Webpack Dev Server
 
-If you deploy to Heroku, you can add the special
-[webpack-rails-buildpack](https://github.com/febeling/webpack-rails-buildpack)
-in order to perform this rake task on each deployment.
+For faster feedback during development:
 
-If you're using `[chunkhash]` in your build asset filenames (which you should be, if you want to cache them in production), you'll need to persist built assets between deployments. Consider in-flight requests at the time of deployment: they'll receive paths based on the old `manifest.json`, not the new one.
+```ruby
+# spec/rails_helper.rb or test/test_helper.rb
+# Ensure webpack-dev-server is running before browser tests
+```
 
-## TODO
+## Deployment
 
-* Drive config via JSON, have webpack.config.js read same JSON?
-* Custom webpack-dev-server that exposes errors, stats, etc
-* [react-rails](https://github.com/reactjs/react-rails) fork for use with this workflow
-* Integration tests
+### Capistrano
+
+Add to your `Capfile`:
+
+```ruby
+require 'capistrano/webpack'
+```
+
+This automatically:
+- Runs `webpack:compile` after `deploy:updated`
+- Compiles assets with production settings
+- Integrates with Rails asset pipeline tasks
+
+### Heroku
+
+Add a `package.json` build script:
+
+```json
+{
+  "scripts": {
+    "build": "webpack --config config/webpack.config.js --mode production"
+  }
+}
+```
+
+Heroku will automatically run `npm install` and the build script.
+
+### Docker
+
+```dockerfile
+# Dockerfile
+FROM ruby:3.2
+
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+RUN apt-get install -y nodejs
+
+# Copy application
+WORKDIR /app
+COPY Gemfile* ./
+RUN bundle install
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Compile assets
+RUN RAILS_ENV=production rake webpack:compile
+RUN RAILS_ENV=production rake assets:precompile
+
+CMD ["rails", "server", "-b", "0.0.0.0"]
+```
+
+## Advanced Usage
+
+### Dynamic Imports (Code Splitting)
+
+Webpack 5 supports dynamic imports for code splitting:
+
+```javascript
+// webpack/application.js
+document.getElementById('load-admin').addEventListener('click', async () => {
+  const { AdminPanel } = await import('./admin_panel');
+  new AdminPanel().render();
+});
+```
+
+Webpack will automatically create a separate chunk file with the `.digested` extension.
+
+### Source Maps
+
+Source maps are automatically generated in development:
+
+```javascript
+// config/webpack.config.js
+module.exports = {
+  devtool: production ? 'source-map' : 'eval-source-map'
+};
+```
+
+Propshaft will serve the `.map` files alongside your bundles.
+
+### Tree Shaking
+
+Webpack 5's production mode automatically enables tree shaking:
+
+```javascript
+// Only the used export will be included in the bundle
+import { usedFunction } from './utils';
+usedFunction();
+```
+
+## Migrating from Older Versions
+
+### From Webpack 3/4
+
+1. Update `package.json` dependencies to Webpack 5
+2. Replace `webpack-manifest-plugin` v1 with v5: `const { WebpackManifestPlugin } = require('webpack-manifest-plugin')`
+3. Update deprecated plugin names (e.g., `UglifyJsPlugin` → built-in optimization)
+4. Add `.digested` to output filename patterns
+
+### From Sprockets
+
+1. Install `rs-webpack-rails` gem
+2. Run generator: `rails generate webpack_rails:install`
+3. Move JavaScript files from `app/assets/javascripts` to `webpack/`
+4. Update requires to ES6 imports
+5. Update view helpers from `javascript_include_tag 'application'` to `javascript_include_tag *webpack_asset_paths('application')`
+
+## Troubleshooting
+
+### Assets not found in production
+
+Ensure you've run `rake webpack:compile` before deploying:
+
+```bash
+RAILS_ENV=production NODE_ENV=production rake webpack:compile
+```
+
+### Webpack dev server connection refused
+
+Check that webpack-dev-server is running on port 3808:
+
+```bash
+npm run dev
+# or
+foreman start
+```
+
+### CORS errors in development
+
+Ensure your webpack config has CORS headers:
+
+```javascript
+devServer: {
+  headers: { 'Access-Control-Allow-Origin': '*' }
+}
+```
+
+### Assets work in dev but not production
+
+Verify the `.digested` extension in your webpack output config:
+
+```javascript
+filename: production ? '[name]-[contenthash].digested.js' : '[name].js'
+```
+
+### Propshaft not finding webpack assets
+
+Ensure `public/webpack/` exists and the railtie is loading:
+
+```bash
+# Check if path is added to asset paths
+rails console
+> Rails.application.config.assets.paths rescue "Propshaft doesn't use config.assets"
+```
+
+## Configuration Reference
+
+### Rails Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `config.webpack.config_file` | `'config/webpack.config.js'` | Webpack config file path |
+| `config.webpack.binary` | `'node_modules/.bin/webpack'` | Webpack binary location |
+| `config.webpack.output_dir` | `'public/webpack'` | Where webpack writes files |
+| `config.webpack.public_path` | `'webpack'` | URL path prefix |
+| `config.webpack.dev_server.enabled` | `Rails.env.development?` | Enable dev server |
+| `config.webpack.dev_server.port` | `3808` | Dev server port |
+| `config.webpack.dev_server.host` | `proc { request.host }` | Dev server host (dynamic) |
 
 ## Contributing
 
-Pull requests & issues welcome. Advice & criticism regarding webpack config approach also welcome.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Write tests for your changes
+4. Ensure tests pass (`bundle exec rspec`)
+5. Commit your changes (`git commit -am 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
-Please ensure that pull requests pass both rubocop & rspec. New functionality should be discussed in an issue first.
+## Testing
 
-## Acknowledgements
+```bash
+# Run all tests
+bundle exec rspec
 
-* Len Garvey for his [webpack-rails](https://github.com/lengarvey/webpack-rails) gem which inspired this implementation
-* Sebastian Porto for [Rails with Webpack](https://reinteractive.net/posts/213-rails-with-webpack-why-and-how)
-* Clark Dave for [How to use Webpack with Rails](http://clarkdave.net/2015/01/how-to-use-webpack-with-rails/)
+# Run specific test file
+bundle exec rspec spec/webpack/rails/helper_spec.rb
+
+# Run with coverage
+COVERAGE=true bundle exec rspec
+```
+
+## License
+
+MIT License. See [MIT-LICENSE](MIT-LICENSE) for details.
+
+## Credits
+
+- Original webpack-rails gem by [Michael Pearson](https://github.com/mipearson)
+- Maintained by [glebtv](https://github.com/glebtv)
+- Rails 7/8 + Propshaft modernization
+
+## Links
+
+- **Repository**: https://gitlab.com/rocket-science/webpack-rails
+- **Issues**: https://gitlab.com/rocket-science/webpack-rails/issues
+- **Webpack Documentation**: https://webpack.js.org
+- **Rails Guides**: https://guides.rubyonrails.org
+- **Propshaft**: https://github.com/rails/propshaft

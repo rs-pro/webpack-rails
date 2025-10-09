@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Webpack Rails Dummy</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+
+  <%# Use webpack_asset_paths helper to include webpack-built JavaScript %>
+  <%= javascript_include_tag *webpack_asset_paths("application") %>
+</head>
+
+<body>
+  <%= yield %>
+</body>
+</html>

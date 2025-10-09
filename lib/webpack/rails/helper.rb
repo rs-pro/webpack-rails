@@ -1,5 +1,4 @@
 require 'action_view'
-require 'webpack/rails/manifest'
 
 module Webpack
   module Rails
@@ -7,40 +6,32 @@ module Webpack
     module Helper
       # Return asset paths for a particular webpack entry point.
       #
-      # Response may either be full URLs (eg http://localhost/...) if the dev server
-      # is in use or a host-relative URl (eg /webpack/...) if assets are precompiled.
+      # With propshaft integration, this helper now wraps propshaft's asset_path
+      # to provide backwards compatibility. Assets are resolved through propshaft's
+      # manifest, which includes webpack-built assets from public/webpack/.
       #
-      # Will raise an error if our manifest can't be found or the entry point does
-      # not exist.
+      # For webpack assets with .digested extension, propshaft will preserve the
+      # webpack-generated digest and serve them correctly.
+      #
+      # Returns an array of asset paths for compatibility with legacy usage:
+      #   <%= javascript_include_tag *webpack_asset_paths("application") %>
+      #
+      # Will raise an error if the entry point does not exist and ignore_missing is false.
       def webpack_asset_paths(source, extension: nil, ignore_missing: false)
-        return "" unless source.present?
+        return [""] unless source.present?
+
+        extension ||= "js"
+        logical_path = "#{source}.#{extension}"
 
         begin
-          if ::Rails.configuration.webpack.manifest_type == "manifest"
-            extension = "js" if extension.nil?
-            paths = Webpack::Rails::Manifest.manifest_asset_paths(source + "." + extension)
-          elsif ::Rails.configuration.webpack.manifest_type == "stats"
-            paths = Webpack::Rails::Manifest.asset_paths(source)
-            paths = paths.select { |p| p.ends_with? ".#{extension}" } if extension
-          end
-        rescue Webpack::Rails::Manifest::EntryPointMissingError => e
-          # puts "webpack asset missing in manifest: #{source}"
+          # Use propshaft's asset_path helper to resolve the asset
+          # This returns the digested path like /assets/application-abc123.digested.js
+          path = asset_path(logical_path)
+          [path]
+        rescue => e
           raise e unless ignore_missing
+          [""]
         end
-
-        port = ::Rails.configuration.webpack.dev_server.port
-        protocol = ::Rails.configuration.webpack.dev_server.https ? 'https' : 'http'
-
-        host = ::Rails.configuration.webpack.dev_server.host
-        host = instance_eval(&host) if host.respond_to?(:call)
-
-        if ::Rails.configuration.webpack.dev_server.enabled && ::Rails.configuration.webpack.manifest_type == "stats"
-          paths.map! do |p|
-            "#{protocol}://#{host}:#{port}#{p}"
-          end
-        end
-
-        paths
       end
     end
   end

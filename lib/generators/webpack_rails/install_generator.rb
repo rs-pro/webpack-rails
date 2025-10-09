@@ -3,7 +3,7 @@ module WebpackRails
   class InstallGenerator < ::Rails::Generators::Base
     source_root File.expand_path("../../../../example", __FILE__)
 
-    desc "Install everything you need for a basic webpack-rails integration"
+    desc "Install everything you need for Webpack 5 + Rails 7/8 + Propshaft integration"
 
     def add_foreman_to_gemfile
       gem 'foreman'
@@ -25,7 +25,12 @@ module WebpackRails
       empty_directory "webpack"
       create_file "webpack/application.js" do
         <<-EOF.strip_heredoc
-        console.log("Hello world!");
+        // Webpack 5 + Rails application entry point
+        console.log("Hello from Webpack 5 + Rails!");
+
+        // Example: Import additional modules
+        // import './components/navbar';
+        // import './stylesheets/application.scss';
         EOF
       end
     end
@@ -36,34 +41,46 @@ module WebpackRails
         # Added by webpack-rails
         /node_modules
         /public/webpack
+        *.log
         EOF
       end
     end
 
-    def run_yarn_install
-      run "yarn install" if yes?("Would you like us to run 'yarn install' for you?")
+    def run_npm_install
+      if yes?("Would you like us to run 'npm install' for you?")
+        run "npm install"
+      else
+        say "Remember to run 'npm install' to install webpack dependencies!", :yellow
+      end
     end
 
     def run_bundle_install
-      run "bundle install" if yes?("Would you like us to run 'bundle install' for you?")
+      if yes?("Would you like us to run 'bundle install' for you?")
+        run "bundle install"
+      end
     end
 
     def whats_next
-      puts <<-EOF.strip_heredoc
+      say "\n" + "="*80, :green
+      say "Webpack 5 + Rails 7/8 + Propshaft Setup Complete!", :green
+      say "="*80 + "\n", :green
 
-        We've set up the basics of webpack-rails for you, but you'll still
-        need to:
-
-          1. Add the 'application' entry point in to your layout, and
-          2. Run 'foreman start' to run the webpack-dev-server and rails server
-
-        See the README.md for this gem at
-        https://github.com/mipearson/webpack-rails/blob/master/README.md
-        for more info.
-
-        Thanks for using webpack-rails!
-
-      EOF
+      say "Next steps:", :cyan
+      say "  1. Add webpack assets to your layout:", :yellow
+      say "     <%= javascript_include_tag *webpack_asset_paths('application') %>", :white
+      say ""
+      say "  2. Run development servers:", :yellow
+      say "     foreman start", :white
+      say "     (or run 'rails s' and 'npm run dev' in separate terminals)", :white
+      say ""
+      say "  3. For production deployment:", :yellow
+      say "     rake webpack:compile", :white
+      say "     (compiles assets to public/webpack/ with .digested extension)", :white
+      say ""
+      say "  4. Webpack outputs to public/webpack/ which propshaft automatically serves", :yellow
+      say ""
+      say "Documentation: https://gitlab.com/rocket-science/webpack-rails", :cyan
+      say "\n" + "="*80 + "\n", :green
     end
   end
 end

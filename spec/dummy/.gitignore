@@ -1,0 +1,39 @@
+# Ignore bundler config.
+/.bundle
+
+# Ignore all environment files.
+/.env*
+!/.env.example
+
+# Ignore all logfiles and tempfiles.
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# Ignore pidfiles, but keep the directory.
+/tmp/pids/*
+!/tmp/pids/.keep
+
+# Ignore storage files.
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/.keep
+
+# Ignore uploaded files in development.
+/public/uploads
+
+# Ignore master key for decrypting credentials and more.
+/config/master.key
+
+# Ignore database files
+*.sqlite3
+*.sqlite3-*
+
+# Ignore node modules
+/node_modules
+
+# Ignore webpack output
+/public/webpack/*
+!/public/webpack/.keep

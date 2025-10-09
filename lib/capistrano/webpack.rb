@@ -1,1 +1,45 @@
+# Load webpack tasks for Capistrano 3
+#
+# Add to Capfile:
+#   require 'capistrano/webpack'
+#
+# This will add webpack:compile to the deployment flow, similar to assets:precompile
+
 load File.expand_path("../tasks/webpack.rake", __FILE__)
+
+# Capistrano 3 task hooks
+namespace :load do
+  task :defaults do
+    set :webpack_roles, fetch(:webpack_roles, :web)
+    set :webpack_env, fetch(:webpack_env, 'production')
+  end
+end
+
+namespace :webpack do
+  desc 'Compile webpack bundles'
+  task :compile do
+    on roles fetch(:webpack_roles) do
+      within release_path do
+        with rails_env: fetch(:webpack_env), node_env: fetch(:webpack_env) do
+          execute :rake, 'webpack:compile'
+        end
+      end
+    end
+  end
+
+  desc 'Clobber webpack bundles'
+  task :clobber do
+    on roles fetch(:webpack_roles) do
+      within release_path do
+        with rails_env: fetch(:webpack_env) do
+          execute :rake, 'webpack:clobber'
+        end
+      end
+    end
+  end
+end
+
+# Hook into Capistrano's asset pipeline
+# This runs after assets:precompile (propshaft) but before deploy:publishing
+after 'deploy:assets:precompile', 'webpack:compile' if Rake::Task.task_defined?('deploy:assets:precompile')
+after 'deploy:updated', 'webpack:compile' unless Rake::Task.task_defined?('deploy:assets:precompile')

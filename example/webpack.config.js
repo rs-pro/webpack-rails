@@ -1,21 +1,22 @@
-// Example webpack configuration with asset fingerprinting in production.
+// Webpack 5 configuration for Rails 7+ with Propshaft integration
 'use strict';
 
-var path = require('path');
-var webpack = require('webpack');
-//var StatsPlugin = require('stats-webpack-plugin');
-var ManifestPlugin = require('webpack-manifest-plugin');
+const path = require('path');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 
 // must match config.webpack.dev_server.port
-var devServerPort = 3808;
+const devServerPort = 3808;
+const host = process.env.WEBPACK_DEV_SERVER_HOST || 'localhost';
 
 // set NODE_ENV=production on the environment to add asset fingerprints
-var production = process.env.NODE_ENV === 'production';
+const production = process.env.NODE_ENV === 'production';
 
-var config = {
+const config = {
+  mode: production ? 'production' : 'development',
+
   entry: {
     // Sources are expected to live in $app_root/webpack
-    'application': 'application.js'
+    application: './webpack/application.js'
   },
 
   output: {
@@ -24,55 +25,58 @@ var config = {
 
     // must match config.webpack.output_dir
     path: path.join(__dirname, 'public', 'webpack'),
-    publicPath: '/webpack/',
+    publicPath: production ? '/webpack/' : `http://${host}:${devServerPort}/webpack/`,
 
-    filename: production ? '[name]-[chunkhash].js' : '[name].js'
+    // Use .digested extension to signal propshaft that webpack already digested the file
+    // This prevents propshaft from re-digesting webpack assets
+    filename: production ? '[name]-[contenthash].digested.js' : '[name].js',
+    chunkFilename: production ? '[name]-[contenthash].digested.chunk.js' : '[name].chunk.js',
+  },
+
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        }
+      }
+    ]
   },
 
   resolve: {
-    modules: [path.resolve(__dirname, "webpack"), path.resolve(__dirname, "node_modules")],
+    modules: [
+      path.resolve(__dirname, 'webpack'),
+      path.resolve(__dirname, 'node_modules')
+    ],
   },
 
   plugins: [
     // must match config.webpack.manifest_filename
-    //new StatsPlugin('manifest.json', {
-      // We only need assetsByChunkName
-      //chunkModules: false,
-      //source: false,
-      //chunks: false,
-      //modules: false,
-      //assets: true
-    //}),
-    new ManifestPlugin({
-      writeToFileEmit: true,
-      //basePath: "",
-      publicPath: production ? "/webpack/" : 'http://localhost:' + devServerPort + '/webpack/',
-    }),
-  ]
+    new WebpackManifestPlugin({
+      publicPath: production ? '/webpack/' : `http://${host}:${devServerPort}/webpack/`,
+      writeToFileEmit: true, // Write manifest even in dev server mode
+    })
+  ],
 
-};
+  devtool: production ? 'source-map' : 'eval-source-map',
 
-if (production) {
-  config.plugins.push(
-    new webpack.NoErrorsPlugin(),
-    new webpack.optimize.UglifyJsPlugin({
-      compressor: { warnings: false },
-      sourceMap: false
-    }),
-    new webpack.DefinePlugin({
-      'process.env': { NODE_ENV: JSON.stringify('production') }
-    }),
-    new webpack.optimize.DedupePlugin(),
-    new webpack.optimize.OccurenceOrderPlugin()
-  );
-} else {
-  config.devServer = {
+  devServer: {
     port: devServerPort,
-    headers: { 'Access-Control-Allow-Origin': '*' }
-  };
-  config.output.publicPath = 'http://localhost:' + devServerPort + '/webpack/';
-  // Source maps
-  config.devtool = 'cheap-module-eval-source-map';
-}
+    host: host,
+    hot: true,
+    headers: { 'Access-Control-Allow-Origin': '*' },
+    allowedHosts: 'all',
+  },
+
+  // Performance hints
+  performance: {
+    hints: production ? 'warning' : false
+  }
+};
 
 module.exports = config;
