@@ -42,10 +42,9 @@ stages:
     - apt-get install -y nodejs
     - node --version
     - npm --version
-    # Install bundler and gems
+    # Install bundler and gems (including development dependencies for testing)
     - gem install bundler --no-document
     - bundle config set --local path 'vendor/bundle'
-    - bundle config set --local without 'development'
     - bundle install --jobs ${BUNDLE_JOBS}
 
 # Setup job - ensures dependencies are cached
@@ -73,9 +72,10 @@ setup:dependencies:
     - cd spec/dummy
     - npm run build || echo "No build script, skipping webpack compilation"
     - cd ../..
-    - bundle exec rspec --format progress --format RspecJunitFormatter --out rspec.xml
+    - bundle exec rspec --format progress --format RspecJunitFormatter --out rspec.xml || bundle exec rspec --format progress
   coverage: '/\(\d+.\d+\%\) covered/'
   artifacts:
+    when: always
     reports:
       junit: rspec.xml
       coverage_report:
@@ -108,9 +108,11 @@ test:webpack-compile:
   needs: ["setup:dependencies"]
   script:
     - cd spec/dummy
-    - npm run build
+    # Run webpack in production mode to generate digested files
+    - NODE_ENV=production npm run build
     - echo "Checking compiled assets..."
     - ls -la public/webpack/
+    # Verify .digested files were created
     - |
       if ls public/webpack/*.digested.js 1> /dev/null 2>&1; then
         echo "✓ Digested assets found"
@@ -146,39 +148,33 @@ test:generator:
     - test -f webpack/application.js || (echo "webpack/application.js not created" && exit 1)
     - echo "✓ Generator test passed"
 
-# Test with Rails 7.x specifically (optional)
+# Test with Rails 7.x specifically (only on MRs and main branches)
 test:rails-7:
   extends: .test_template
   image: ruby:3.3-bookworm
-  needs:
-    - job: setup:dependencies
-      optional: true
   before_script:
     - !reference [.ruby_node_template, before_script]
     - bundle config set --local gemfile 'Gemfile'
     - echo "gem 'rails', '~> 7.0'" >> Gemfile
     - bundle install --jobs ${BUNDLE_JOBS}
   allow_failure: true
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
+  only:
+    - merge_requests
+    - master
+    - main
 
-# Test with Rails 8.x specifically (optional)
+# Test with Rails 8.x specifically (only on MRs and main branches)
 test:rails-8:
   extends: .test_template
   image: ruby:3.4-bookworm
-  needs:
-    - job: setup:dependencies
-      optional: true
   before_script:
     - !reference [.ruby_node_template, before_script]
     - bundle exec rails --version
   allow_failure: true
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
+  only:
+    - merge_requests
+    - master
+    - main
 
 # RuboCop linting
 quality:rubocop:
@@ -193,7 +189,7 @@ quality:rubocop:
     expire_in: 1 week
   allow_failure: true
 
-# Security audit
+# Security audit (only on MRs and main branches)
 quality:bundle-audit:
   image: ruby:3.4-bookworm
   stage: quality
@@ -202,15 +198,16 @@ quality:bundle-audit:
   script:
     - bundler-audit check --update
   allow_failure: true
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
+  only:
+    - merge_requests
+    - master
+    - main
 
 # Deploy coverage to GitLab Pages
 pages:
   stage: deploy
-  needs: ["test:ruby-3.4"]
+  dependencies:
+    - test:ruby-3.4
   script:
     - mkdir -p public
     - cp -r coverage public/ || echo "No coverage directory"
@@ -218,32 +215,8 @@ pages:
     paths:
       - public
     expire_in: 30 days
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
+  only:
+    - master
+    - main
 
-# Build and release gem on tags
-release:gem:
-  image: ruby:3.4-bookworm
-  stage: deploy
-  needs: ["test:ruby-3.3", "test:ruby-3.4"]
-  before_script:
-    - gem install bundler --no-document
-  script:
-    - echo "Building gem version $(ruby -r ./lib/webpack/rails/version.rb -e 'puts Webpack::Rails::VERSION')"
-    - gem build rs-webpack-rails.gemspec
-    - ls -lh *.gem
-    # Uncomment to push to RubyGems (requires RUBYGEMS_API_KEY variable)
-    # - |
-    #   if [ -n "$RUBYGEMS_API_KEY" ]; then
-    #     mkdir -p ~/.gem
-    #     echo ":rubygems_api_key: ${RUBYGEMS_API_KEY}" > ~/.gem/credentials
-    #     chmod 0600 ~/.gem/credentials
-    #     gem push *.gem
-    #   fi
-  artifacts:
-    paths:
-      - "*.gem"
-    expire_in: 1 month
-  rules:
-    - if: '$CI_COMMIT_TAG'
+# Note: Gem releases are done manually since RubyGems requires 2FA authentication
