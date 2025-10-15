@@ -8,7 +8,6 @@ variables:
   BUNDLE_PATH: vendor/bundle
   BUNDLE_JOBS: 4
   BUNDLE_RETRY: 3
-  # Disable Spring in CI
   DISABLE_SPRING: 1
 
 # Cache gems and npm packages between jobs
@@ -26,18 +25,19 @@ stages:
   - setup
   - test
   - quality
+  - deploy
 
 # Template for Ruby + Node.js setup
 .ruby_node_template:
   before_script:
-    # Install system dependencies for Cuprite (Chrome headless)
+    # Install system dependencies
     - apt-get update -qq && apt-get install -y curl wget gnupg unzip
-    # Install Chrome for Cuprite browser tests
+    # Install Chrome for browser tests
     - wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
     - echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
     - apt-get update -qq && apt-get install -y google-chrome-stable
     - export CHROME_PATH=/usr/bin/google-chrome-stable
-    # Install Node.js 20 LTS using NodeSource
+    # Install Node.js 20 LTS
     - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     - apt-get install -y nodejs
     - node --version
@@ -53,9 +53,7 @@ setup:dependencies:
   extends: .ruby_node_template
   stage: setup
   script:
-    # Install Ruby gems
     - bundle check || bundle install
-    # Install Node.js dependencies for dummy app
     - cd spec/dummy && npm install
     - echo "Dependencies installed successfully"
   cache:
@@ -66,17 +64,15 @@ setup:dependencies:
       - spec/dummy/node_modules
     expire_in: 1 hour
 
-# Matrix testing: Ruby 3.3 and 3.4
+# Test job template
 .test_template:
   extends: .ruby_node_template
   stage: test
   needs: ["setup:dependencies"]
   script:
-    # Build webpack assets for dummy app
     - cd spec/dummy
     - npm run build || echo "No build script, skipping webpack compilation"
     - cd ../..
-    # Run RSpec tests with coverage
     - bundle exec rspec --format progress --format RspecJunitFormatter --out rspec.xml
   coverage: '/\(\d+.\d+\%\) covered/'
   artifacts:
@@ -105,46 +101,16 @@ test:ruby-3.4:
   extends: .test_template
   image: ruby:3.4-bookworm
 
-# RuboCop linting
-quality:rubocop:
-  extends: .ruby_node_template
-  stage: quality
-  needs: ["setup:dependencies"]
-  script:
-    - bundle exec rubocop --format progress --format json --out rubocop.json || true
-  artifacts:
-    paths:
-      - rubocop.json
-    expire_in: 1 week
-  allow_failure: true
-
-# Security audit
-quality:bundle-audit:
-  image: ruby:3.4-bookworm
-  stage: quality
-  needs: []
-  before_script:
-    - gem install bundler-audit --no-document
-  script:
-    - bundler-audit check --update
-  allow_failure: true
-  only:
-    - merge_requests
-    - master
-    - main
-
-# Build webpack assets to verify compilation works
+# Test webpack compilation
 test:webpack-compile:
   extends: .ruby_node_template
   stage: test
   needs: ["setup:dependencies"]
   script:
-    # Test webpack compilation in dummy app
     - cd spec/dummy
     - npm run build
     - echo "Checking compiled assets..."
     - ls -la public/webpack/
-    # Verify .digested files were created
     - |
       if ls public/webpack/*.digested.js 1> /dev/null 2>&1; then
         echo "✓ Digested assets found"
@@ -163,7 +129,7 @@ test:generator:
   stage: test
   needs: ["setup:dependencies"]
   script:
-    # Create temporary Rails app to test generator
+    # Create temporary Rails app
     - gem install rails --version ">= 7.0" --no-document
     - rails new /tmp/test_app --skip-bundle --skip-git --asset-pipeline=propshaft
     - cd /tmp/test_app
@@ -179,39 +145,71 @@ test:generator:
     - test -d webpack || (echo "webpack directory not created" && exit 1)
     - test -f webpack/application.js || (echo "webpack/application.js not created" && exit 1)
     - echo "✓ Generator test passed"
-  allow_failure: false
 
-# Optional: Test with Rails 7.x specifically
+# Test with Rails 7.x specifically (optional)
 test:rails-7:
   extends: .test_template
   image: ruby:3.3-bookworm
+  needs:
+    - job: setup:dependencies
+      optional: true
   before_script:
     - !reference [.ruby_node_template, before_script]
-    # Override Rails version to 7.x
     - bundle config set --local gemfile 'Gemfile'
     - echo "gem 'rails', '~> 7.0'" >> Gemfile
     - bundle install --jobs ${BUNDLE_JOBS}
-  only:
-    - merge_requests
-    - master
-    - main
+  allow_failure: true
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
-# Optional: Test with Rails 8.x specifically
+# Test with Rails 8.x specifically (optional)
 test:rails-8:
   extends: .test_template
   image: ruby:3.4-bookworm
+  needs:
+    - job: setup:dependencies
+      optional: true
   before_script:
     - !reference [.ruby_node_template, before_script]
-    # Rails 8 should already be the default, just verify
     - bundle exec rails --version
-  only:
-    - merge_requests
-    - master
-    - main
+  allow_failure: true
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
-# Pages job - publish coverage report (optional)
-pages:
+# RuboCop linting
+quality:rubocop:
+  extends: .ruby_node_template
   stage: quality
+  needs: ["setup:dependencies"]
+  script:
+    - bundle exec rubocop --format progress --format json --out rubocop.json || true
+  artifacts:
+    paths:
+      - rubocop.json
+    expire_in: 1 week
+  allow_failure: true
+
+# Security audit
+quality:bundle-audit:
+  image: ruby:3.4-bookworm
+  stage: quality
+  before_script:
+    - gem install bundler-audit --no-document
+  script:
+    - bundler-audit check --update
+  allow_failure: true
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Deploy coverage to GitLab Pages
+pages:
+  stage: deploy
   needs: ["test:ruby-3.4"]
   script:
     - mkdir -p public
@@ -220,22 +218,22 @@ pages:
     paths:
       - public
     expire_in: 30 days
-  only:
-    - master
-    - main
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
-# Release job - runs on tags
+# Build and release gem on tags
 release:gem:
   image: ruby:3.4-bookworm
-  stage: quality
-  needs: ["test:ruby-3.3", "test:ruby-3.4", "quality:rubocop"]
+  stage: deploy
+  needs: ["test:ruby-3.3", "test:ruby-3.4"]
   before_script:
     - gem install bundler --no-document
   script:
     - echo "Building gem version $(ruby -r ./lib/webpack/rails/version.rb -e 'puts Webpack::Rails::VERSION')"
     - gem build rs-webpack-rails.gemspec
     - ls -lh *.gem
-    # Optionally push to RubyGems (requires RUBYGEMS_API_KEY variable)
+    # Uncomment to push to RubyGems (requires RUBYGEMS_API_KEY variable)
     # - |
     #   if [ -n "$RUBYGEMS_API_KEY" ]; then
     #     mkdir -p ~/.gem
@@ -247,5 +245,5 @@ release:gem:
     paths:
       - "*.gem"
     expire_in: 1 month
-  only:
-    - tags
+  rules:
+    - if: '$CI_COMMIT_TAG'
