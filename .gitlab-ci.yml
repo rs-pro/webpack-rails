@@ -168,9 +168,7 @@ test:generator:
     - rails new /tmp/test_app --skip-bundle --skip-git --asset-pipeline=propshaft
     - cd /tmp/test_app
     # Add gem from current source
-    - cat >> Gemfile << EOF
-      gem 'rs-webpack-rails', path: '$CI_PROJECT_DIR'
-      EOF
+    - printf "gem 'rs-webpack-rails', path: '%s'\n" "$CI_PROJECT_DIR" >> Gemfile
     - bundle install
     # Run generator
     - bundle exec rails generate webpack_rails:install --skip-bundle --skip-npm-install
