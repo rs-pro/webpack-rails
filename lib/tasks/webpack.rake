@@ -14,15 +14,6 @@ namespace :webpack do
       raise "Can't find our webpack config file at #{config_file}"
     end
 
-    # Check for NVM wrapper (created by Capistrano during deployment)
-    nvm_wrapper = "/tmp/#{Rails.application.class.module_parent_name.underscore}/nvm-exec.sh"
-
-    if File.exist?(nvm_wrapper)
-      # Production deployment - use NVM wrapper to ensure correct Node.js version
-      sh "#{nvm_wrapper} #{webpack_bin} --config #{config_file} --bail"
-    else
-      # Local development or non-NVM environments
-      sh "#{webpack_bin} --config #{config_file} --bail"
-    end
+    sh "#{webpack_bin} --config #{config_file} --bail"
   end
 end
