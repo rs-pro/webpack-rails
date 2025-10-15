@@ -14,6 +14,18 @@ namespace :webpack do
       raise "Can't find our webpack config file at #{config_file}"
     end
 
-    sh "#{webpack_bin} --config #{config_file} --bail"
+    # Check for NVM wrapper path from environment variable
+    # This should be set by capistrano-nvm or deployment scripts
+    # Example: NVM_WRAPPER_PATH=/tmp/myapp/nvm-exec.sh
+    nvm_wrapper = ENV['NVM_WRAPPER_PATH']
+
+    if nvm_wrapper && File.exist?(nvm_wrapper)
+      # Use NVM wrapper if explicitly configured and exists
+      puts "Using NVM wrapper: #{nvm_wrapper}"
+      sh "#{nvm_wrapper} #{webpack_bin} --config #{config_file} --bail"
+    else
+      # Direct execution (local development or non-NVM deployments)
+      sh "#{webpack_bin} --config #{config_file} --bail"
+    end
   end
 end

@@ -20,7 +20,19 @@ namespace :webpack do
   task :compile do
     on roles fetch(:webpack_roles) do
       within release_path do
-        with rails_env: fetch(:webpack_env), node_env: fetch(:webpack_env) do
+        # Build environment variables for the rake task
+        env_vars = {
+          rails_env: fetch(:webpack_env),
+          node_env: fetch(:webpack_env)
+        }
+
+        # Pass NVM wrapper path if capistrano-nvm is being used
+        # The nvm_prefix is set by capistrano-nvm and contains the path to nvm-exec.sh
+        if fetch(:nvm_prefix, nil)
+          env_vars[:nvm_wrapper_path] = fetch(:nvm_prefix)
+        end
+
+        with env_vars do
           execute :rake, 'webpack:compile'
         end
       end
