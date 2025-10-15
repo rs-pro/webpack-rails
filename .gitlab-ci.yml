@@ -10,6 +10,25 @@ variables:
   BUNDLE_RETRY: 3
   DISABLE_SPRING: 1
 
+# Workflow rules to prevent duplicate pipelines
+# Run pipeline for:
+# - Merge requests
+# - Default branch (master/main)
+# - Tags
+# - Web/API/scheduled pipelines
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "refactor"'  # Include refactor branch for now
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "api"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
 # Cache gems and npm packages between jobs
 cache:
   key:
@@ -148,7 +167,7 @@ test:generator:
     - test -f webpack/application.js || (echo "webpack/application.js not created" && exit 1)
     - echo "✓ Generator test passed"
 
-# Test with Rails 7.x specifically (only on MRs and main branches)
+# Test with Rails 7.x specifically
 test:rails-7:
   extends: .test_template
   image: ruby:3.3-bookworm
@@ -158,12 +177,8 @@ test:rails-7:
     - echo "gem 'rails', '~> 7.0'" >> Gemfile
     - bundle install --jobs ${BUNDLE_JOBS}
   allow_failure: true
-  only:
-    - merge_requests
-    - master
-    - main
 
-# Test with Rails 8.x specifically (only on MRs and main branches)
+# Test with Rails 8.x specifically
 test:rails-8:
   extends: .test_template
   image: ruby:3.4-bookworm
@@ -171,10 +186,6 @@ test:rails-8:
     - !reference [.ruby_node_template, before_script]
     - bundle exec rails --version
   allow_failure: true
-  only:
-    - merge_requests
-    - master
-    - main
 
 # RuboCop linting
 quality:rubocop:
@@ -189,7 +200,7 @@ quality:rubocop:
     expire_in: 1 week
   allow_failure: true
 
-# Security audit (only on MRs and main branches)
+# Security audit
 quality:bundle-audit:
   image: ruby:3.4-bookworm
   stage: quality
@@ -198,12 +209,8 @@ quality:bundle-audit:
   script:
     - bundler-audit check --update
   allow_failure: true
-  only:
-    - merge_requests
-    - master
-    - main
 
-# Deploy coverage to GitLab Pages
+# Deploy coverage to GitLab Pages (only on main branches)
 pages:
   stage: deploy
   dependencies:
@@ -215,8 +222,8 @@ pages:
     paths:
       - public
     expire_in: 30 days
-  only:
-    - master
-    - main
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
 # Note: Gem releases are done manually since RubyGems requires 2FA authentication
