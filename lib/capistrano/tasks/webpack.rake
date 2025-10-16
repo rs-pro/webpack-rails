@@ -35,8 +35,15 @@ namespace :deploy do
     end
   end
 
-  after 'deploy:updated', 'deploy:compile_webpack_assets'
-  after 'deploy:updated', 'deploy:normalize_webpack_assets'
+  # Hook into the deployment flow after Rails assets are compiled
+  # This ensures webpack runs after propshaft/sprockets but before publishing
+  after 'deploy:assets:precompile', 'deploy:compile_webpack_assets' if Rake::Task.task_defined?('deploy:assets:precompile')
+  after 'deploy:assets:precompile', 'deploy:normalize_webpack_assets' if Rake::Task.task_defined?('deploy:assets:precompile')
+
+  # Fallback if assets:precompile doesn't exist
+  after 'deploy:updated', 'deploy:compile_webpack_assets' unless Rake::Task.task_defined?('deploy:assets:precompile')
+  after 'deploy:updated', 'deploy:normalize_webpack_assets' unless Rake::Task.task_defined?('deploy:assets:precompile')
+
   after 'deploy:reverted', 'deploy:rollback_webpack_assets'
 
   namespace :webpack do

@@ -51,7 +51,5 @@ namespace :webpack do
   end
 end
 
-# Hook into Capistrano's asset pipeline
-# This runs after assets:precompile (propshaft) but before deploy:publishing
-after 'deploy:assets:precompile', 'webpack:compile' if Rake::Task.task_defined?('deploy:assets:precompile')
-after 'deploy:updated', 'webpack:compile' unless Rake::Task.task_defined?('deploy:assets:precompile')
+# Note: The hooks are registered in tasks/webpack.rake to avoid duplication
+# The comprehensive implementation with manifest backup/restore is used there
