@@ -1,3 +1,5 @@
+require 'terrapin'
+
 namespace :webpack do
   desc "Compile webpack bundles"
   task compile: :environment do
@@ -22,10 +24,12 @@ namespace :webpack do
     if nvm_wrapper && File.exist?(nvm_wrapper)
       # Use NVM wrapper if explicitly configured and exists
       puts "Using NVM wrapper: #{nvm_wrapper}"
-      sh "#{nvm_wrapper} #{webpack_bin} --config #{config_file} --bail"
+      cmd = Terrapin::CommandLine.new(nvm_wrapper, ":webpack_bin --config :config_file --bail")
+      cmd.run(webpack_bin: webpack_bin, config_file: config_file)
     else
       # Direct execution (local development or non-NVM deployments)
-      sh "#{webpack_bin} --config #{config_file} --bail"
+      cmd = Terrapin::CommandLine.new(webpack_bin, "--config :config_file --bail")
+      cmd.run(config_file: config_file)
     end
   end
 end

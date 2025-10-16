@@ -30,5 +30,6 @@ Gem::Specification.new do |s|
 
   s.add_dependency "railties", ">= 7.0.0"
   s.add_dependency "propshaft", ">= 0.6.0"
+  s.add_dependency "terrapin", "~> 1.0"
   s.required_ruby_version = '>= 3.0.0'
 end
