@@ -1,4 +1,5 @@
 require 'action_view'
+require 'json'
 
 module Webpack
   module Rails
@@ -6,12 +7,11 @@ module Webpack
     module Helper
       # Return asset paths for a particular webpack entry point.
       #
-      # With propshaft integration, this helper now wraps propshaft's asset_path
-      # to provide backwards compatibility. Assets are resolved through propshaft's
-      # manifest, which includes webpack-built assets from public/webpack/.
+      # Webpack assets are already compiled and digested, and they're served
+      # directly from /webpack/, NOT through Propshaft's /assets/ prefix.
       #
-      # For webpack assets with .digested extension, propshaft will preserve the
-      # webpack-generated digest and serve them correctly.
+      # This helper reads the webpack manifest.json directly and returns the
+      # paths as-is (e.g., "/webpack/application-abc123.digested.js").
       #
       # Returns an array of asset paths for compatibility with legacy usage:
       #   <%= javascript_include_tag *webpack_asset_paths("application") %>
@@ -24,13 +24,34 @@ module Webpack
         logical_path = "#{source}.#{extension}"
 
         begin
-          # Use propshaft's asset_path helper to resolve the asset
-          # This returns the digested path like /assets/application-abc123.digested.js
-          path = asset_path(logical_path)
+          # Read webpack manifest directly to get the actual path
+          path = read_webpack_manifest[logical_path]
+
+          if path.nil?
+            raise "Webpack asset not found: #{logical_path}"
+          end
+
           [path]
         rescue => e
           raise e unless ignore_missing
           [""]
+        end
+      end
+
+      private
+
+      def read_webpack_manifest
+        @webpack_manifest ||= begin
+          manifest_path = ::Rails.root.join(
+            ::Rails.configuration.webpack.output_dir,
+            ::Rails.configuration.webpack.manifest_filename
+          )
+
+          if File.exist?(manifest_path)
+            JSON.parse(File.read(manifest_path))
+          else
+            {}
+          end
         end
       end
     end
