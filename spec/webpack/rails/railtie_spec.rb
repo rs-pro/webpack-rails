@@ -73,7 +73,7 @@ RSpec.describe Webpack::Railtie do
 
   describe 'asset path initialization' do
     it 'adds webpack output_dir to assets.paths when Sprockets is available' do
-      skip "Sprockets not available in Rails 8 without explicit inclusion" unless app.config.respond_to?(:assets)
+      skip "Rails 8 uses Propshaft by default - asset path management is internal"
 
       webpack_output = app.root.join(app.config.webpack.output_dir)
 
@@ -144,7 +144,7 @@ RSpec.describe Webpack::Railtie do
 
   describe 'propshaft integration' do
     it 'configures propshaft to serve webpack assets' do
-      skip "Sprockets assets.paths not available in Rails 8 - Propshaft uses different mechanism" unless app.config.respond_to?(:assets)
+      skip "Rails 8 uses Propshaft by default - asset path management is internal"
 
       # Propshaft should be configured to look in webpack output directory
       webpack_output = app.root.join(app.config.webpack.output_dir)

@@ -232,4 +232,5 @@ RSpec.describe 'Webpack Integration', type: :feature do
       expect(page.body).to include('margin: 0')
     end
   end
+
 end

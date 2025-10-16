@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rs-webpack-rails (1.0.0)
+    rs-webpack-rails (0.13.1)
       propshaft (>= 0.6.0)
       railties (>= 7.0.0)
 

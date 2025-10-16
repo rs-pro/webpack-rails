@@ -52,6 +52,12 @@ module Webpack
       end
     end
 
+    # Inject webpack manifest into Propshaft's manifest after Rails initialization
+    config.after_initialize do |app|
+      require 'webpack/rails/manifest_injector'
+      Webpack::Rails::ManifestInjector.inject(app)
+    end
+
     rake_tasks do
       load "tasks/webpack.rake"
     end
